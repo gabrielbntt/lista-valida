@@ -6,7 +6,7 @@
 // processada nao sobrescreve o resultado.
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { renderSubject, renderTrackedBody } from './render.ts'
+import { renderSubject, renderTextBody, renderTrackedBody, unsubscribeUrl } from './render.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -14,6 +14,15 @@ const internalSecret = Deno.env.get('INTERNAL_SECRET')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')!
 const siteUrl = (Deno.env.get('SITE_URL') || supabaseUrl).replace(/\/$/, '')
 const functionsUrl = `${supabaseUrl.replace(/\/$/, '')}/functions/v1`
+
+// Se TRACKING_BASE_URL estiver definido (ex.: https://listavalida.com.br/r,
+// servido pelos rewrites do vercel.json), os links de rastreamento saem no
+// mesmo dominio do remetente. Sem ele, cai no dominio do Supabase - que
+// funciona igual, so entrega pior.
+const trackingBase = Deno.env.get('TRACKING_BASE_URL')?.replace(/\/$/, '')
+const tracking = trackingBase
+  ? { click: `${trackingBase}/c`, open: `${trackingBase}/o` }
+  : { click: `${functionsUrl}/track-click`, open: `${functionsUrl}/track-open` }
 
 const DEFAULT_BATCH_SIZE = 10
 const MAX_ATTEMPTS = 5
@@ -85,9 +94,19 @@ async function processRow(supabase: SupabaseClient, row: OutboxRow) {
     return
   }
 
-  const trackedBody = renderTrackedBody(campaign, contact, log.id, functionsUrl, siteUrl)
+  const trackedBody = renderTrackedBody(campaign, contact, log.id, tracking, siteUrl)
+  const unsubUrl = unsubscribeUrl(log.id, siteUrl)
+  const textBody = renderTextBody(campaign, contact, unsubUrl)
   const fromField = campaign.sender_name ? `${campaign.sender_name} <${campaign.sender_email}>` : campaign.sender_email
-  const result = await sendViaResend(fromField, contact.email, log.subject, trackedBody)
+  const result = await sendViaResend({
+    from: fromField,
+    to: contact.email,
+    subject: log.subject,
+    html: trackedBody,
+    text: textBody,
+    unsubUrl,
+    replyTo: campaign.sender_email,
+  })
 
   if (result.ok) {
     await markSent(supabase, row, log.id, trackedBody)
@@ -130,17 +149,37 @@ async function createQueuedLog(supabase: SupabaseClient, row: OutboxRow, campaig
   return data
 }
 
-async function sendViaResend(
-  from: string,
-  to: string,
-  subject: string,
-  html: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+interface SendParams {
+  from: string
+  to: string
+  subject: string
+  html: string
+  text: string
+  unsubUrl: string
+  replyTo: string
+}
+
+async function sendViaResend(p: SendParams): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, html }),
+      body: JSON.stringify({
+        from: p.from,
+        to: [p.to],
+        subject: p.subject,
+        html: p.html,
+        // Parte em texto puro: HTML sozinho pesa contra na avaliacao de spam.
+        text: p.text,
+        reply_to: p.replyTo,
+        headers: {
+          // Exigido pelo Gmail e pelo Yahoo para remetentes em massa desde
+          // 2024. Sem estes dois cabecalhos, a mensagem perde reputacao
+          // mesmo com autenticacao de dominio correta.
+          'List-Unsubscribe': `<${p.unsubUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      }),
     })
     if (res.ok) return { ok: true }
     const errBody = (await res.json().catch(() => ({}))) as { message?: string; error?: string }
