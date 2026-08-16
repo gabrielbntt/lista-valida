@@ -54,3 +54,6 @@ supabase/.temp/
 
 # Dados de usuarios reais usados so pela migracao (PII - nunca versionar)
 scripts/known-emails.local.json
+
+# Clone aninhado do repositorio (nao deve ser versionado)
+lista-valida/

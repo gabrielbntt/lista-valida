@@ -383,7 +383,7 @@ export default function CampaignDetail() {
                         <TableRow key={log.id}>
                           <TableCell>
                             <p className="text-xs font-medium text-slate-900">
-                              {log.recipient_name || '—'}
+                              {log.recipient_name || '-'}
                             </p>
                             <p className="text-[11px] text-slate-400">{log.recipient_email}</p>
                           </TableCell>
@@ -411,11 +411,11 @@ export default function CampaignDetail() {
                                 {log.error_message}
                               </p>
                             ) : (
-                              <span className="text-[10px] text-slate-300">—</span>
+                              <span className="text-[10px] text-slate-300">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-[11px] text-slate-500">
-                            {log.sent_at ? new Date(log.sent_at).toLocaleString('pt-BR') : '—'}
+                            {log.sent_at ? new Date(log.sent_at).toLocaleString('pt-BR') : '-'}
                           </TableCell>
                         </TableRow>
                       ))}

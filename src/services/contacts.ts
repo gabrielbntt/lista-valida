@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase/client'
 import { getCurrentUserId } from '@/lib/supabase/current-user'
+import { fetchAllPages } from '@/lib/supabase/fetch-all'
 
 export type RoleCategory =
   | 'C-Level'
@@ -109,12 +110,37 @@ export function toPatch(data: Partial<ContactRecord>): Record<string, unknown> {
   return patch
 }
 
-export const getContacts = async (eventId?: string): Promise<ContactRecord[]> => {
-  let query = supabase.from('mailing_contacts').select(SELECT).order('created_at', { ascending: false })
-  if (eventId) query = query.eq('event_id', eventId)
-  const { data, error } = await query
-  if (error) throw error
-  return (data ?? []).map(mapRow)
+// Busca paginada: sem isso o PostgREST devolve so as primeiras 1000 linhas
+// e a tela trata como se fosse a base inteira (ver lib/supabase/fetch-all).
+export const getContacts = async (
+  eventId?: string,
+  onProgress?: (carregados: number) => void,
+): Promise<ContactRecord[]> => {
+  let countQuery = supabase.from('mailing_contacts').select('id', { count: 'exact', head: true })
+  if (eventId) countQuery = countQuery.eq('event_id', eventId)
+  const { count, error: countError } = await countQuery
+  if (countError) throw countError
+
+  const rows = await fetchAllPages<ContactRow>(
+    (from, to) => {
+      let query = supabase
+        .from('mailing_contacts')
+        .select(SELECT)
+        .order('created_at', { ascending: false })
+        // Desempate obrigatorio: a importacao em massa grava milhares de
+        // linhas com created_at identico e, sem uma chave unica na
+        // ordenacao, a ordem varia entre as consultas - o que faz a
+        // paginacao repetir linhas e perder outras.
+        .order('id', { ascending: true })
+        .range(from, to)
+      if (eventId) query = query.eq('event_id', eventId)
+      return query
+    },
+    count ?? 0,
+    onProgress,
+  )
+
+  return rows.map(mapRow)
 }
 
 export const getContact = async (id: string): Promise<ContactRecord> => {

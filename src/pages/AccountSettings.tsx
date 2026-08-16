@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Mail, User } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { extractFieldErrors, type FieldErrors } from '@/lib/errors'
+import { SenderEmailInput } from '@/components/SenderEmailInput'
 
 export default function AccountSettings() {
   const { user, updateProfile } = useAuth()
@@ -75,18 +76,10 @@ export default function AccountSettings() {
             <Label className="text-xs font-semibold flex items-center gap-1.5">
               <Mail className="w-3 h-3 text-indigo-500" /> E-mail do Remetente
             </Label>
-            <Input
-              value={senderEmail}
-              onChange={(e) => setSenderEmail(e.target.value)}
-              placeholder="contato@seudominio.com.br"
-              className="text-xs h-9"
-            />
+            <SenderEmailInput value={senderEmail} onChange={setSenderEmail} />
             {fieldErrors.sender_email && (
               <p className="text-[10px] text-red-500">{fieldErrors.sender_email}</p>
             )}
-            <p className="text-[10px] text-slate-400">
-              Use um e-mail com domínio verificado no Resend para evitar falhas de envio.
-            </p>
           </div>
           <Button
             onClick={handleSave}
@@ -105,11 +98,11 @@ export default function AccountSettings() {
         <CardContent className="space-y-2 text-xs">
           <div className="flex justify-between">
             <span className="text-slate-500">Nome:</span>
-            <span className="font-medium text-slate-800">{user?.name || '—'}</span>
+            <span className="font-medium text-slate-800">{user?.name || '-'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">E-mail:</span>
-            <span className="font-medium text-slate-800">{user?.email || '—'}</span>
+            <span className="font-medium text-slate-800">{user?.email || '-'}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Perfil:</span>

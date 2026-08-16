@@ -3,6 +3,7 @@ import { Mail, FileText } from 'lucide-react'
 import { createCampaign } from '@/services/campaigns'
 import { getTemplates, TEMPLATE_CATEGORIES, type TemplateRecord } from '@/services/templates'
 import { extractFieldErrors, type FieldErrors } from '@/lib/errors'
+import { SenderEmailInput } from '@/components/SenderEmailInput'
 import {
   Dialog,
   DialogContent,
@@ -148,7 +149,7 @@ export function CampaignFormDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none" className="text-xs">
-                  — Sem modelo —
+                  - Sem modelo -
                 </SelectItem>
                 {TEMPLATE_CATEGORIES.map((cat) => {
                   const catTemplates = templates.filter((t) => t.category === cat)
@@ -221,12 +222,7 @@ export function CampaignFormDialog({
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Remetente (E-mail)</Label>
-              <Input
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-                placeholder="contato@evento.com"
-                className="text-xs h-9"
-              />
+              <SenderEmailInput value={senderEmail} onChange={setSenderEmail} />
               {fieldErrors.sender_email && (
                 <p className="text-[10px] text-red-500">{fieldErrors.sender_email}</p>
               )}

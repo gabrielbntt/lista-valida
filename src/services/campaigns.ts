@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase/client'
 import { getCurrentUserId } from '@/lib/supabase/current-user'
+import { fetchAllPages } from '@/lib/supabase/fetch-all'
 
 export type CampaignStatus = 'rascunho' | 'enviando' | 'enviado' | 'parcialmente_falhou'
 
@@ -276,14 +277,29 @@ export const sendBulkEmail = async (
   return data as BulkSendResult
 }
 
+// Paginado: uma campanha para 19 mil contatos gera 19 mil logs, e sem isso
+// o relatorio de entregas mostraria metricas calculadas sobre apenas 1000.
 export const getCampaignLogs = async (campaignId: string): Promise<EmailLogRecord[]> => {
-  const { data, error } = await supabase
+  const { count, error: countError } = await supabase
     .from('email_logs')
-    .select(
-      'id, campaign_id, contact_id, recipient_email, recipient_name, subject, body, status, error_message, sent_at, opened_at, clicked_at, click_count, created_at, updated_at',
-    )
+    .select('id', { count: 'exact', head: true })
     .eq('campaign_id', campaignId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data ?? []).map(mapLog)
+  if (countError) throw countError
+
+  const rows = await fetchAllPages<EmailLogRow>(
+    (from, to) =>
+      supabase
+        .from('email_logs')
+        .select(
+          'id, campaign_id, contact_id, recipient_email, recipient_name, subject, body, status, error_message, sent_at, opened_at, clicked_at, click_count, created_at, updated_at',
+        )
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false })
+        // Desempate unico: sem ele a paginacao repete e perde linhas quando
+        // varios logs compartilham o mesmo created_at (envio em lote).
+        .order('id', { ascending: true })
+        .range(from, to),
+    count ?? 0,
+  )
+  return rows.map(mapLog)
 }

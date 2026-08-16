@@ -8,6 +8,7 @@ import {
   type TemplateCategory,
 } from '@/services/templates'
 import { extractFieldErrors, type FieldErrors } from '@/lib/errors'
+import { SenderEmailInput } from '@/components/SenderEmailInput'
 import {
   Dialog,
   DialogContent,
@@ -210,12 +211,7 @@ export function TemplateFormDialog({
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold">E-mail do Remetente</Label>
-                <Input
-                  value={senderEmail}
-                  onChange={(e) => setSenderEmail(e.target.value)}
-                  placeholder="contato@evento.com"
-                  className="text-xs h-9"
-                />
+                <SenderEmailInput value={senderEmail} onChange={setSenderEmail} />
                 {fieldErrors.sender_email && (
                   <p className="text-[10px] text-red-500">{fieldErrors.sender_email}</p>
                 )}
@@ -283,7 +279,7 @@ export function TemplateFormDialog({
                   Assunto
                 </p>
                 <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                  {renderPreview(subject) || '—'}
+                  {renderPreview(subject) || '-'}
                 </p>
               </div>
               <div className="border-t border-slate-200 pt-2">
@@ -291,13 +287,13 @@ export function TemplateFormDialog({
                   Corpo
                 </p>
                 <pre className="text-xs text-slate-700 whitespace-pre-wrap font-sans mt-0.5">
-                  {renderPreview(body) || '—'}
+                  {renderPreview(body) || '-'}
                 </pre>
               </div>
               {senderName || senderEmail ? (
                 <div className="border-t border-slate-200 pt-2">
                   <p className="text-[10px] text-slate-400">
-                    De: {senderName || '—'} {senderEmail ? `<${senderEmail}>` : ''}
+                    De: {senderName || '-'} {senderEmail ? `<${senderEmail}>` : ''}
                   </p>
                 </div>
               ) : null}

@@ -237,7 +237,7 @@ export default function Users() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-slate-500">
-                    {u.created ? new Date(u.created).toLocaleDateString('pt-BR') : '—'}
+                    {u.created ? new Date(u.created).toLocaleDateString('pt-BR') : '-'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Select

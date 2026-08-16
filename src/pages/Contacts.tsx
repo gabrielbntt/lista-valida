@@ -630,10 +630,10 @@ export default function Contacts() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="text-xs font-medium text-slate-800">{contact.company || '—'}</p>
-                    <span className="text-[11px] text-slate-500">{contact.raw_role || '—'}</span>
+                    <p className="text-xs font-medium text-slate-800">{contact.company || '-'}</p>
+                    <span className="text-[11px] text-slate-500">{contact.raw_role || '-'}</span>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-600">{contact.city || '—'}</TableCell>
+                  <TableCell className="text-xs text-slate-600">{contact.city || '-'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] bg-slate-50">
                       {contact.role_category || 'Não definido'}
@@ -658,7 +658,7 @@ export default function Contacts() {
                       ? 'Sim'
                       : contact.has_degree === 'Não'
                         ? 'Não'
-                        : '—'}
+                        : '-'}
                   </TableCell>
                   <TableCell>
                     <Badge
