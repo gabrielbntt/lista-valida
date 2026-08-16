@@ -48,3 +48,12 @@ screenshot.png
 
 # Linux kernel core dumps (e.g. when oxfmt or pnpm crash)
 core.[0-9]*
+
+# Estado local da CLI do Supabase (vinculo com o projeto remoto, por maquina)
+supabase/.temp/
+
+# Dados de usuarios reais usados so pela migracao (PII - nunca versionar)
+scripts/known-emails.local.json
+
+# Clone aninhado do repositorio (nao deve ser versionado)
+lista-valida/

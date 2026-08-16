@@ -21,5 +21,8 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "tailwind.config.ts", "*.tsx"]
+  "include": ["src", "tailwind.config.ts", "*.tsx"],
+  /* Testes ficam fora do build do app: dependem do vitest, que so entra
+     quando o runner for adicionado ao projeto. */
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }

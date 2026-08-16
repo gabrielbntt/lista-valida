@@ -18,6 +18,7 @@ import DomainSettings from './pages/DomainSettings'
 import BlockedContacts from './pages/BlockedContacts'
 import Unsubscribe from './pages/Unsubscribe'
 import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Users from './pages/Users'
 import AccountSettings from './pages/AccountSettings'
 import NotFound from './pages/NotFound'
@@ -35,6 +36,7 @@ const App = () => (
         <Routes>
           <Route path="/descadastrar/:logId" element={<Unsubscribe />} />
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
+          <Route path="/redefinir-senha" element={<ResetPassword />} />
           <Route path="/" element={<Index />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />

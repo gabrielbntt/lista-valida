@@ -12,7 +12,7 @@ import {
 } from '@/services/events'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useEventContext } from '@/contexts/event-context'
-import { extractFieldErrors, getErrorMessage, type FieldErrors } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage, type FieldErrors } from '@/lib/errors'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

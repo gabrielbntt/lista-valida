@@ -8,6 +8,7 @@ import {
   Building2,
   Mail,
   Phone,
+  MapPin,
   Briefcase,
   Target,
   MessageSquare,
@@ -151,6 +152,12 @@ export default function ContactDetail() {
               <div className="flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 <span className="text-slate-700">{contact.company}</span>
+              </div>
+            )}
+            {contact.city && (
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-700">{contact.city}</span>
               </div>
             )}
             {contact.raw_role && (

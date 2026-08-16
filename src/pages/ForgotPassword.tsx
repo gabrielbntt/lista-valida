@@ -51,8 +51,8 @@ export default function ForgotPassword() {
             </CardTitle>
             <CardDescription>
               {success
-                ? 'Verifique seu e-mail para obter a nova senha.'
-                : 'Informe seu e-mail e enviaremos uma nova senha para você.'}
+                ? 'Verifique seu e-mail para acessar o link de redefinição.'
+                : 'Informe seu e-mail e enviaremos um link para redefinir sua senha.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -60,8 +60,9 @@ export default function ForgotPassword() {
               <div className="space-y-4 text-center py-4">
                 <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
                 <p className="text-sm text-slate-600">
-                  Se o e-mail estiver cadastrado, você receberá uma nova senha em sua caixa de
-                  entrada. Não esqueça de verificá-lo também na pasta de spam ou lixo eletrônico.
+                  Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha
+                  em sua caixa de entrada. Não esqueça de verificá-lo também na pasta de spam ou
+                  lixo eletrônico.
                 </p>
                 <Button
                   asChild
@@ -114,7 +115,7 @@ export default function ForgotPassword() {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Enviar nova senha
+                        Enviar link de redefinição
                       </>
                     )}
                   </Button>

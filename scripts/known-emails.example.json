@@ -1,0 +1,4 @@
+{
+  "_comentario": "Copie para known-emails.local.json (fora do versionamento) e preencha com os pares id->email tirados do painel Admin do PocketBase. Necessario porque a API do PocketBase oculta o campo email de registros de auth que nao sejam o do proprio usuario autenticado.",
+  "id_do_registro_no_pocketbase": "email@exemplo.com"
+}

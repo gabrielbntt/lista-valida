@@ -94,7 +94,7 @@ export default function BlockedContacts() {
     }
   }
 
-  const eventName = (id?: string) => events.find((e) => e.id === id)?.name || '—'
+  const eventName = (id?: string) => events.find((e) => e.id === id)?.name || '-'
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -202,7 +202,7 @@ export default function BlockedContacts() {
               filtered.map((b) => (
                 <TableRow key={b.id} className="hover:bg-slate-50/80">
                   <TableCell className="text-xs font-medium text-slate-900">
-                    {b.name || '—'}
+                    {b.name || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600">{b.email}</TableCell>
                   <TableCell className="text-xs text-slate-600">
@@ -217,7 +217,7 @@ export default function BlockedContacts() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-slate-500">
-                    {b.blocked_at ? new Date(b.blocked_at).toLocaleString('pt-BR') : '—'}
+                    {b.blocked_at ? new Date(b.blocked_at).toLocaleString('pt-BR') : '-'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -246,7 +246,7 @@ export default function BlockedContacts() {
             <Card key={b.id} className="p-4 space-y-2">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-bold text-xs text-slate-900">{b.name || '—'}</p>
+                  <p className="font-bold text-xs text-slate-900">{b.name || '-'}</p>
                   <p className="text-[11px] text-slate-500">{b.email}</p>
                 </div>
                 <Badge

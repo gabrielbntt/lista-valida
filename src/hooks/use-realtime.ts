@@ -1,21 +1,19 @@
 import { useEffect, useRef } from 'react'
-import type { RecordModel, RecordSubscription } from 'pocketbase'
-
-import pb from '@/lib/pocketbase/client'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import supabase from '@/lib/supabase/client'
 
 /**
- * Hook for real-time subscriptions to a PocketBase collection.
- * ALWAYS use this hook instead of subscribing inline.
- * Uses the per-listener UnsubscribeFunc so multiple components
- * can safely subscribe to the same collection without conflicts.
- *
- * Generic over the record type: pass your collection's interface as
- * `useRealtime<MyRecord>(...)` to get a typed subscription payload
- * instead of `unknown`.
+ * Hook for real-time subscriptions to a Supabase table (postgres_changes).
+ * ALWAYS use this hook instead of subscribing inline. Cada chamada abre
+ * seu proprio canal (nome unico), entao varios componentes podem assinar
+ * a mesma tabela sem conflito. RLS ja escopa quais linhas cada canal
+ * entrega - sem filtro adicional aqui, mesmo padrao do hook anterior
+ * (PocketBase SSE) que so disparava um refetch completo, nunca usava o
+ * payload do evento.
  */
-export function useRealtime<TRecord extends RecordModel = RecordModel>(
-  collectionName: string,
-  callback: (data: RecordSubscription<TRecord>) => void,
+export function useRealtime<TRow extends Record<string, unknown> = Record<string, unknown>>(
+  tableName: string,
+  callback: (payload: RealtimePostgresChangesPayload<TRow>) => void,
   enabled: boolean = true,
 ) {
   const callbackRef = useRef(callback)
@@ -24,29 +22,19 @@ export function useRealtime<TRecord extends RecordModel = RecordModel>(
   useEffect(() => {
     if (!enabled) return
 
-    let unsubscribeFn: (() => Promise<void>) | undefined
-    let cancelled = false
-
-    pb.collection<TRecord>(collectionName)
-      .subscribe('*', (e) => {
-        callbackRef.current(e)
-      })
-      .then((fn) => {
-        if (cancelled) {
-          fn().catch(() => {})
-        } else {
-          unsubscribeFn = fn
-        }
-      })
-      .catch(() => {})
+    const channel = supabase
+      .channel(`${tableName}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: tableName },
+        (payload: RealtimePostgresChangesPayload<TRow>) => callbackRef.current(payload),
+      )
+      .subscribe()
 
     return () => {
-      cancelled = true
-      if (unsubscribeFn) {
-        unsubscribeFn().catch(() => {})
-      }
+      supabase.removeChannel(channel)
     }
-  }, [collectionName, enabled])
+  }, [tableName, enabled])
 }
 
 export default useRealtime

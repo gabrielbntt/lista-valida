@@ -10,6 +10,7 @@ import {
   X,
   ChevronRight,
   Eye,
+  Send,
 } from 'lucide-react'
 import { useEventContext } from '@/contexts/event-context'
 import {
@@ -24,6 +25,8 @@ import {
   PriorityLevel,
   SearchHit,
 } from '@/services/contacts'
+import { getTemplates, TemplateRecord } from '@/services/templates'
+import { sendBulkEmail } from '@/services/campaigns'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,6 +48,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 
@@ -70,6 +81,12 @@ export default function Contacts() {
   // Selection & Bulk Actions
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [classifyingBatch, setClassifyingBatch] = useState(false)
+
+  // Bulk Email Send
+  const [templates, setTemplates] = useState<TemplateRecord[]>([])
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [sendingBulkEmail, setSendingBulkEmail] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!selectedEvent?.id) {
@@ -185,6 +202,35 @@ export default function Contacts() {
     })
     setSelectedIds([])
     loadData()
+  }
+
+  // Bulk Email Send
+  const openSendDialog = async () => {
+    setSelectedTemplateId('')
+    setSendDialogOpen(true)
+    try {
+      setTemplates(await getTemplates())
+    } catch {
+      toast({ title: 'Erro ao carregar modelos de e-mail' })
+    }
+  }
+
+  const handleSendBulkEmail = async () => {
+    if (!selectedEvent?.id || !selectedTemplateId || selectedIds.length === 0) return
+    setSendingBulkEmail(true)
+    try {
+      const result = await sendBulkEmail(selectedIds, selectedTemplateId, selectedEvent.id)
+      toast({
+        title: 'Envio iniciado!',
+        description: `${result.queued} e-mails na fila de envio${result.ignored_blocked ? ` (${result.ignored_blocked} bloqueados)` : ''}.`,
+      })
+      setSendDialogOpen(false)
+      setSelectedIds([])
+    } catch (err) {
+      toast({ title: 'Erro ao enviar e-mails', description: (err as Error).message })
+    } finally {
+      setSendingBulkEmail(false)
+    }
   }
 
   // Bulk Export CSV
@@ -467,6 +513,14 @@ export default function Contacts() {
             </Button>
             <Button
               size="sm"
+              onClick={openSendDialog}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Enviar e-mail para todos</span>
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={handleExportCSV}
               className="text-xs h-8 text-slate-200 border-slate-700 bg-slate-800 hover:bg-slate-700 gap-1.5"
@@ -499,6 +553,7 @@ export default function Contacts() {
               </TableHead>
               <TableHead className="text-xs font-bold">Participante</TableHead>
               <TableHead className="text-xs font-bold">Empresa & Cargo</TableHead>
+              <TableHead className="text-xs font-bold">Cidade</TableHead>
               <TableHead className="text-xs font-bold">Categoria</TableHead>
               <TableHead className="text-xs font-bold">RSVP</TableHead>
               <TableHead className="text-xs font-bold">Diploma</TableHead>
@@ -524,6 +579,9 @@ export default function Contacts() {
                     <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-16" />
                   </TableCell>
                   <TableCell>
@@ -542,7 +600,7 @@ export default function Contacts() {
               ))
             ) : filteredContacts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={10} className="text-center py-8 text-xs text-slate-500">
                   Nenhum contato encontrado com os filtros selecionados.
                 </TableCell>
               </TableRow>
@@ -572,9 +630,10 @@ export default function Contacts() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="text-xs font-medium text-slate-800">{contact.company || '—'}</p>
-                    <span className="text-[11px] text-slate-500">{contact.raw_role || '—'}</span>
+                    <p className="text-xs font-medium text-slate-800">{contact.company || '-'}</p>
+                    <span className="text-[11px] text-slate-500">{contact.raw_role || '-'}</span>
                   </TableCell>
+                  <TableCell className="text-xs text-slate-600">{contact.city || '-'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] bg-slate-50">
                       {contact.role_category || 'Não definido'}
@@ -599,7 +658,7 @@ export default function Contacts() {
                       ? 'Sim'
                       : contact.has_degree === 'Não'
                         ? 'Não'
-                        : '—'}
+                        : '-'}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -696,6 +755,55 @@ export default function Contacts() {
           ))
         )}
       </div>
+
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">Enviar e-mail</DialogTitle>
+            <DialogDescription className="text-xs">
+              Escolha o modelo a ser enviado para os {selectedIds.length} contatos selecionados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-1">
+            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Selecione um modelo" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.length === 0 ? (
+                  <SelectItem value="none" disabled className="text-xs">
+                    Nenhum modelo cadastrado
+                  </SelectItem>
+                ) : (
+                  templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="text-xs">
+                      {t.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSendDialogOpen(false)}
+              className="text-xs"
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSendBulkEmail}
+              disabled={!selectedTemplateId || sendingBulkEmail}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+            >
+              {sendingBulkEmail ? 'Enviando...' : 'Enviar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

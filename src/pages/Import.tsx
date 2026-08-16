@@ -15,7 +15,7 @@ import { useEventContext } from '@/contexts/event-context'
 import { importContacts, classifyContact } from '@/services/contacts'
 import { createEvent } from '@/services/events'
 import { parseXLSXFile } from '@/lib/xlsx-parser'
-import { extractFieldErrors, getErrorMessage, type FieldErrors } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage, type FieldErrors } from '@/lib/errors'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +45,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+
+// Teto para a classificacao automatica pos-importacao (ver comentario no
+// handleStartImport). Acima disso, classificar em lote pela tela Contatos.
+const AUTO_CLASSIFY_LIMIT = 200
 
 const AVAILABLE_EXTRA_FIELDS = [
   { value: 'raw_role', label: 'Cargo Original' },
@@ -213,7 +217,7 @@ export default function Import() {
 
     const idx = (key: string) => csvHeaders.indexOf(key)
     const payload = csvRows.map((row) => {
-      const obj: Record<string, string> = {
+      const obj: { name: string; email: string; [key: string]: string } = {
         name: idx(defaultMapping.name) >= 0 ? row[idx(defaultMapping.name)] : '',
         email: idx(defaultMapping.email) >= 0 ? row[idx(defaultMapping.email)] : '',
         phone: idx(defaultMapping.phone) >= 0 ? row[idx(defaultMapping.phone)] : '',
@@ -227,15 +231,25 @@ export default function Import() {
       return obj
     })
 
-    setImportProgress(60)
+    setImportProgress(10)
 
     try {
-      const result = await importContacts(targetEventId, payload, allowDuplicates)
+      // O envio vai em lotes: o progresso reflete quantas linhas ja foram
+      // processadas de verdade, nao um valor fixo.
+      const result = await importContacts(targetEventId, payload, allowDuplicates, (done, total) => {
+        setImportProgress(10 + Math.round((done / total) * 85))
+      })
       setImportReport(result)
       setImportProgress(100)
       toast({ title: 'Importação concluída!' })
 
-      const ids = result.imported_ids || []
+      // A classificacao roda um contato por vez (uma chamada de function
+      // cada). Numa planilha grande isso levaria horas e daria a impressao
+      // de travamento logo apos a importacao ja ter terminado, entao ela e
+      // limitada aqui - o restante fica disponivel em Contatos, onde da
+      // para selecionar e classificar em lote quando quiser.
+      const allIds = result.imported_ids || []
+      const ids = allIds.slice(0, AUTO_CLASSIFY_LIMIT)
       if (ids.length > 0) {
         setTotalToClassify(ids.length)
         setClassifying(true)
@@ -253,9 +267,13 @@ export default function Import() {
           setClassifyProgress(Math.round(((i + 1) / ids.length) * 100))
         }
         setClassifying(false)
+        const restantes = allIds.length - ids.length
         toast({
           title: 'Classificação IA concluída!',
-          description: `${count} contatos classificados com sucesso!`,
+          description:
+            restantes > 0
+              ? `${count} contatos classificados. Os outros ${restantes} ficaram como Pendente — classifique em lote pela tela de Contatos.`
+              : `${count} contatos classificados com sucesso!`,
         })
       }
     } catch (err) {

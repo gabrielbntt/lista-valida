@@ -133,7 +133,7 @@ export function ReportDetailDialog({
                 {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="text-xs font-medium text-slate-900">
-                      {log.recipient_name || '—'}
+                      {log.recipient_name || '-'}
                     </TableCell>
                     <TableCell className="text-xs text-slate-500">{log.recipient_email}</TableCell>
                     <TableCell>
@@ -150,10 +150,10 @@ export function ReportDetailDialog({
                       )}
                     </TableCell>
                     <TableCell className="text-[11px] text-slate-500">
-                      {log.opened_at ? new Date(log.opened_at).toLocaleString('pt-BR') : '—'}
+                      {log.opened_at ? new Date(log.opened_at).toLocaleString('pt-BR') : '-'}
                     </TableCell>
                     <TableCell className="text-[11px] text-slate-500">
-                      {log.clicked_at ? new Date(log.clicked_at).toLocaleString('pt-BR') : '—'}
+                      {log.clicked_at ? new Date(log.clicked_at).toLocaleString('pt-BR') : '-'}
                     </TableCell>
                     <TableCell className="text-xs font-medium">{log.click_count || 0}</TableCell>
                   </TableRow>

@@ -3,7 +3,24 @@ import { useParams } from 'react-router-dom'
 import { CheckCircle2, AlertCircle, Loader2, MailX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import pb from '@/lib/pocketbase/client'
+
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
+
+// unsubscribe-confirm e publica (--no-verify-jwt) e identifica o log via
+// query string (?log=), nao path param - ver docs/migration-supabase.md
+// secao 11.
+async function confirmUnsubscribe(logId: string): Promise<void> {
+  const url = `${FUNCTIONS_URL}/unsubscribe-confirm?log=${encodeURIComponent(logId)}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  })
+  if (!res.ok) throw new Error('Falha na requisição de descadastro.')
+}
 
 export default function Unsubscribe() {
   const { logId } = useParams<{ logId: string }>()
@@ -15,9 +32,9 @@ export default function Unsubscribe() {
     setStatus('loading')
     setError('')
     try {
-      await pb.send(`/backend/v1/unsubscribe/${logId}`, { method: 'POST' })
+      await confirmUnsubscribe(logId)
       setStatus('success')
-    } catch (err) {
+    } catch {
       setStatus('error')
       setError('Não foi possível processar seu descadastro no momento. Tente novamente mais tarde.')
     }

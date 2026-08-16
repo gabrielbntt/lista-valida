@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/table'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/hooks/use-toast'
-import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { getErrorMessage } from '@/lib/errors'
 
 export interface FailureDiagnostic {
   totalErrors: number
@@ -150,28 +150,15 @@ export default function CampaignDetail() {
     setSending(true)
     try {
       const result = await sendCampaign(id)
-      if (result.total === 0 && result.ignored_blocked) {
+      if (result.queued === 0 && result.ignored_blocked) {
         toast({
           title: 'Nenhum e-mail enviado',
           description: `Todos os ${result.ignored_blocked} destinatários estão bloqueados.`,
         })
-      } else if (result.failed > 0 && result.sent === 0) {
-        toast({
-          title: 'Disparo falhou',
-          description: result.first_error
-            ? `Todos os ${result.failed} envios falharam. Erro: ${result.first_error}`
-            : `Todos os ${result.failed} envios falharam. Verifique os detalhes abaixo.`,
-          variant: 'destructive',
-        })
-      } else if (result.failed > 0) {
-        toast({
-          title: 'Disparo parcial',
-          description: `${result.sent} enviados, ${result.failed} falhas. Verifique os erros abaixo.`,
-        })
       } else {
         toast({
-          title: 'Disparo concluído!',
-          description: `${result.sent} e-mails enviados com sucesso${result.ignored_blocked ? ` (${result.ignored_blocked} bloqueados)` : ''}.`,
+          title: 'Disparo iniciado!',
+          description: `${result.queued} e-mails na fila de envio${result.ignored_blocked ? ` (${result.ignored_blocked} bloqueados)` : ''}. Acompanhe o progresso abaixo.`,
         })
       }
       fetchData()
@@ -192,28 +179,15 @@ export default function CampaignDetail() {
     setRetrying(true)
     try {
       const result = await retryCampaignFailures(id)
-      if (result.total === 0 && result.ignored_blocked) {
+      if (result.requeued === 0 && result.ignored_blocked) {
         toast({
           title: 'Nenhum reenvio necessário',
           description: `Todos os ${result.ignored_blocked} destinatários estão bloqueados.`,
         })
-      } else if (result.failed > 0 && result.sent === 0) {
-        toast({
-          title: 'Reenvio falhou',
-          description: result.first_error
-            ? `Todos os ${result.failed} reenvios falharam. Erro: ${result.first_error}`
-            : `Todos os ${result.failed} reenvios falharam. Verifique os detalhes abaixo.`,
-          variant: 'destructive',
-        })
-      } else if (result.failed > 0) {
-        toast({
-          title: 'Reenvio parcial',
-          description: `Reenvio concluído: ${result.sent} enviados, ${result.failed} falhas.`,
-        })
       } else {
         toast({
-          title: 'Reenvio concluído!',
-          description: `Reenvio concluído: ${result.sent} e-mails enviados com sucesso${result.ignored_blocked ? ` (${result.ignored_blocked} bloqueados)` : ''}.`,
+          title: 'Reenvio iniciado!',
+          description: `${result.requeued} e-mails de volta na fila${result.ignored_blocked ? ` (${result.ignored_blocked} bloqueados)` : ''}. Acompanhe o progresso abaixo.`,
         })
       }
       fetchData()
@@ -409,7 +383,7 @@ export default function CampaignDetail() {
                         <TableRow key={log.id}>
                           <TableCell>
                             <p className="text-xs font-medium text-slate-900">
-                              {log.recipient_name || '—'}
+                              {log.recipient_name || '-'}
                             </p>
                             <p className="text-[11px] text-slate-400">{log.recipient_email}</p>
                           </TableCell>
@@ -418,6 +392,11 @@ export default function CampaignDetail() {
                               <Badge className="bg-emerald-50 text-emerald-700 text-[10px]">
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Enviado
+                              </Badge>
+                            ) : log.status === 'enviando' ? (
+                              <Badge className="bg-slate-100 text-slate-600 text-[10px]">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Na fila
                               </Badge>
                             ) : (
                               <Badge className="bg-rose-50 text-rose-700 text-[10px]">
@@ -432,11 +411,11 @@ export default function CampaignDetail() {
                                 {log.error_message}
                               </p>
                             ) : (
-                              <span className="text-[10px] text-slate-300">—</span>
+                              <span className="text-[10px] text-slate-300">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-[11px] text-slate-500">
-                            {log.sent_at ? new Date(log.sent_at).toLocaleString('pt-BR') : '—'}
+                            {log.sent_at ? new Date(log.sent_at).toLocaleString('pt-BR') : '-'}
                           </TableCell>
                         </TableRow>
                       ))}
