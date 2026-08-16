@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/r/c",
+      "destination": "https://bqjzyebbhboocytigacx.supabase.co/functions/v1/track-click"
+    },
+    {
+      "source": "/r/o",
+      "destination": "https://bqjzyebbhboocytigacx.supabase.co/functions/v1/track-open"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
